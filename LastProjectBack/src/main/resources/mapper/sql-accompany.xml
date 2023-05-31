@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="project.mapper.AccompanyMapper">
+
+	<!-- Accompany 검색 -->
+	<select id="listAccompanyDtoByPages" resultType="project.dto.AccompanyDto">
+		select * 
+		  from ( select accompany_idx, accompany_title, user_id, accompany_numbers, accompany_content, accompany_image, accompany_region,
+		                date_format(accompany_start_time, "%y.%m.%d") as accompany_start_time
+		                , date_format(accompany_end_time, "%y.%m.%d") as accompany_end_time,
+		                accompany_deleted
+		           from accompany
+		          where accompany_title like concat('%',#{search},'%' )
+		             or accompany_content like concat('%',#{search},'%' )
+		             or accompany_region like concat('%',#{search},'%' )
+		       order by accompany_idx desc )
+		    as accompany_page
+		    where accompany_region like concat('%',#{accompanyRegion}) and accompany_deleted = 'N'
+		    
+		 limit 9
+		offset #{pages}
+	</select>
+
+	<!-- Accompany 검색 페이지 수 조회 -->
+	<select id="listAccompanyDtoSearchPageCount" resultType="int">
+		select ceil( count(*) / 9 )
+		  from ( select accompany_idx, accompany_title, user_id, accompany_numbers, accompany_content, accompany_image, accompany_region,
+		                accompany_start_time, accompany_end_time, accompany_deleted
+		           from accompany
+		          where accompany_title like concat('%',#{search},'%' )
+		             or accompany_content like concat('%',#{search},'%' )
+		             or accompany_region like concat('%',#{search},'%' )
+	           order by accompany_idx desc )
+	        as accompany_search_count
+	        where accompany_region like concat('%',#{accompanyRegion}) and accompany_deleted = 'N'
+	        
+	</select>
+	
+	<!-- Accompany 페이지 수 조회 -->
+	<select id="listAccompanyDtoPageCount" resultType="int">
+		select ceil( count(*) / 9 )
+		  from accompany
+		  where accompany_deleted = 'N'
+	</select>
+	
+	<!-- Accompany 상세페이지 조회 -->
+	<select id="accompanyDetail" parameterType="int" resultType="project.dto.AccompanyDto"> 
+		select accompany_idx, accompany_title, accompany_image, accompany_content, accompany_numbers, accompany_cnt, accompany_region,
+			   date_format(accompany_start_time, '%Y.%m.%d' ) as accompany_start_time ,
+			   date_format(accompany_end_time, '%Y.%m.%d' ) as accompany_end_time ,
+		       date_format(accompany_created_time, '%Y.%m.%d %H:%i' ) as accompany_created_time,
+		       user_id
+		  from accompany
+		 where accompany_deleted = 'N' and accompany_idx=#{accompanyIdx} 
+	</select>
+	
+	<!-- Accompany 상세페이지 조회수 증가 -->
+	<update id="updateCount" parameterType="int">
+		update accompany
+		   set accompany_cnt = accompany_cnt + 1
+		where accompany_idx = #{accompanyIdx}
+	</update>
+	
+	<!-- Accompany 작성 -->	
+	<insert id="insertAccompany" parameterType="project.dto.AccompanyDto">
+		<![CDATA[ insert into
+			accompany(accompany_region, accompany_title, accompany_content, accompany_image, accompany_numbers,
+			accompany_start_time, accompany_end_time, accompany_created_time, user_id)
+			values
+			(#{accompanyRegion}, #{accompanyTitle}, #{accompanyContent}, #{accompanyImage}, #{accompanyNumbers},
+			#{accompanyStartTime}, #{accompanyEndTime}, now(), #{userId})
+			]]>
+			<selectKey keyProperty="accompanyIdx" resultType="Integer">
+	        SELECT LAST_INSERT_ID()
+			</selectKey>
+	</insert>
+
+	<!-- Accompany 삭제 -->
+	<delete id="deleteAccompany" parameterType="int">
+		update accompany
+		   set accompany_deleted = 'Y'
+		 where accompany_idx = #{accompanyIdx}
+	</delete>
+
+	<!-- Accompany 수정 -->
+	<update id="updateAccompany" parameterType="project.dto.AccompanyDto">
+		update accompany
+		   set accompany_title = #{accompanyTitle},
+		       accompany_region = #{accompanyRegion},
+		       accompany_content = #{accompanyContent},
+		       accompany_image = #{accompanyImage},
+		       accompany_numbers = #{accompanyNumbers},
+		       accompany_start_time = #{accompanyStartTime},
+		       accompany_end_time = #{accompanyEndTime},
+		       accompany_created_time = now(),
+		       user_id = #{userId}
+		 where accompany_idx = #{accompanyIdx}
+	</update>
+
+</mapper>

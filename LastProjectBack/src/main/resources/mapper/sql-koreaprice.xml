@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="project.mapper.KoreapriceMapper">
+	
+	<!-- 물가 정보 조회 -->
+	<select id="selectKoreapriceList" resultType="project.dto.KoreapriceDto">
+		select * 
+		from koreaprice
+	</select>
+
+	<select id="selectExchangeList" resultType="project.exchange.ExchangeDto">
+		select *
+		from exchange
+	</select>
+
+	<!-- 환율 정보 입력 -->
+	<insert id="insertExchangeList" parameterType="project.exchange.ExchangeDto">
+		insert into exchange ( exchange_nation_short, exchange_nation, exchange_rate)
+		values ( #{exchangeNationShort}, #{exchangeNation}, #{exchangeRate} )
+	</insert>
+
+	<!-- 환율 정보 업데이트 -->
+	<update id="updateExchangeList" parameterType="project.exchange.ExchangeDto">
+		update exchange
+		set exchange_rate = #{ exchangeRate }
+		where exchange_nation_short = #{ exchangeNationShort } 
+	</update>
+
+</mapper>

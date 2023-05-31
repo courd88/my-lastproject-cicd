@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="project.mapper.ProjectMapper">
+
+	<!-- 게시판 리스트 -->
+	<select id="selectIdealRealList"
+		resultType="project.dto.IdealrealDto">
+		select * from idealreal ir
+		left outer join
+		(select
+		idealreal_idx as
+		rcmd_idealreal_idx, count(*) as like_count from rcmd
+		group by
+		idealreal_idx) a
+		on ir.idealreal_idx = a.rcmd_idealreal_idx
+		where
+		ir.idealreal_deleted='N'
+		order by ir.idealreal_idx desc
+	</select>
+
+	<!-- 게시판 좋아요 리스트 -->
+	<select id="selectIdealRealListWithLike"
+		resultType="project.dto.IdealrealDto">
+		select * from idealreal ir
+		left outer join
+		(select
+		idealreal_idx as rcmd_idealreal_idx, count(*) as like_count from rcmd
+		group by idealreal_idx) a
+		on ir.idealreal_idx = a.rcmd_idealreal_idx
+		where ir.idealreal_deleted='N'
+		order by like_count desc,
+		ir.idealreal_idx desc
+	</select>
+
+	<!-- 게시판 리스트 페이지 -->
+	<select id="selectIdealRealListPage" parameterType="int"
+		resultType="project.dto.IdealrealDto">
+		select * from idealreal ir
+		left outer join
+		(select
+		idealreal_idx as
+		rcmd_idealreal_idx, count(*) as like_count from rcmd
+		group by
+		idealreal_idx) a
+		on ir.idealreal_idx = a.rcmd_idealreal_idx
+		where
+		ir.idealreal_deleted='N'
+		order by ir.idealreal_idx desc
+		limit
+		#{page}, 8
+	</select>
+	
+	<!-- 게시판 좋아요 리스트 페이지 -->
+	<select id="selectIdealRealListWithLikePage" parameterType="int"
+		resultType="project.dto.IdealrealDto">
+		select * from idealreal ir
+		left outer join
+		(select
+		idealreal_idx as rcmd_idealreal_idx, count(*) as like_count from rcmd
+		group by idealreal_idx) a
+		on ir.idealreal_idx = a.rcmd_idealreal_idx
+		where ir.idealreal_deleted='N'
+		order by like_count desc,
+		ir.idealreal_idx desc
+		limit #{page}, 8
+	</select>
+
+	<!-- 게시판 리스트 페이지 지정 -->
+	<select id="listidealrealpagecount" resultType="int">
+		select ceil(count(*)/8) from idealreal
+		where idealreal_deleted='N'
+	</select>
+
+	<!-- 게시판 글 쓰기 -->
+	<insert id="insertIdealreal"
+		parameterType="project.dto.IdealrealDto">
+		insert into idealreal (idealreal_title,
+		idealreal_content, idealreal_created_time, user_id,
+		idealreal_ideal_img,
+		idealreal_real_img)
+		values (
+		#{idealrealTitle},
+		#{idealrealContent}, now(), 'admin', #{idealrealRealImg},
+		#{idealrealIdealImg} )
+	</insert>
+
+	<!-- 게시판 글 조회 -->
+	<update id="updatecnt" parameterType="int">
+		update idealreal
+		set
+		idealreal_cnt = idealreal_cnt + 1
+		where idealreal_idx = #{idealrealIdx}
+	</update>
+
+	<!-- 게시판 상세 보기 -->
+	<select id="selectIdealrealDetail" parameterType="int"
+		resultType="project.dto.IdealrealDto">
+		select idealreal_idx, idealreal_title, idealreal_content,
+		idealreal_cnt, idealreal_ideal_img, idealreal_real_img,
+		date_format(idealreal_created_time, '%Y-%m-%d %H:%i:%s') as
+		idealreal_created_time,
+		user_id
+		from idealreal
+		where idealreal_deleted =
+		'N' and idealreal_idx = #{idealrealIdx}
+	</select>
+
+	<!-- 게시판 글 수정 -->
+	<update id="updateIdealreal"
+		parameterType="project.dto.IdealrealDto">
+		update idealreal
+		set idealreal_title = #{idealrealTitle},
+		idealreal_content = #{idealrealContent},
+		idealreal_ideal_img = #{idealrealIdealImg},
+		idealreal_real_img = #{idealrealRealImg},
+		idealreal_created_time = now(),
+		user_id = 'admin'
+		where idealreal_idx = #{idealrealIdx}
+	</update>
+	
+	<!-- 게시판 수정 글 사진 저장 -->
+	<update id="reuploadIdealreal">
+		insert into
+		idealreal(idealreal_ideal_img,
+		idealreal_real_img)
+		values
+		(#{idealrealRealImg},#{idealrealIdealImg})
+	</update>
+
+	<!-- 게시판 글 삭제 -->
+	<delete id="deleteIdealreal" parameterType="int">
+		update idealreal
+		set
+		idealreal_deleted = 'Y',
+		idealreal_created_time = now(),
+		user_id =
+		'admin'
+		where idealreal_idx = #{idealrealIdx}
+	</delete>
+
+	<!-- 게시판 글 사진 저장 -->
+	<insert id="uploadIdealreal">
+		insert into
+		idealreal(idealreal_ideal_img,
+		idealreal_real_img)
+		values
+		(#{idealrealRealImg},#{idealrealIdealImg})
+	</insert>
+
+	<!-- 좋아요 수 조회 -->
+	<select id="selectLikesCount" parameterType="int"
+		resultType="int">
+		SELECT count(*)
+		FROM rcmd
+		WHERE idealreal_idx=#{idealrealIdx}
+		group by idealreal_idx
+	</select>
+
+	<!-- 좋아요 수 업데이트 -->
+	<insert id="updateLikesCount" parameterType="int">
+		insert into rcmd (
+		user_id, idealreal_idx )
+		values ( #{userId}, #{idealrealIdx} )
+	</insert>
+
+	<!-- 좋아요 수 취소 -->
+	<delete id="deleteLikesCount" parameterType="int">
+		UPDATE rcmd
+		SET
+		idealreal_idx = idealreal_idx - 1
+		WHERE
+		AND
+		idealreal_idx=#{idealrealIdx}
+	</delete>
+
+
+<!-- 용석이꺼 -->
+<!-- 공지사항 리스트 조회 -->
+	<select id="listNoticeDto" resultType="project.dto.NoticeDto">
+		select notice_idx, notice_title,
+		       date_format(notice_created_time, '%Y.%m.%d' ) as
+		       notice_created_time
+		  from notice
+		 where notice_deleted = 'N'
+	  order by notice_idx desc
+	</select>
+
+	<!-- 공지사항 글별 상세페이지 조회 -->
+	<select id="noticeDetail" parameterType="int" resultType="project.dto.NoticeDto">
+		select notice_idx, notice_title, notice_content,
+		       date_format(notice_created_time, '%Y.%m.%d' ) as notice_created_time
+		  from notice
+		 where notice_deleted = 'N' and notice_idx=#{noticeIdx}
+	</select>
+
+	<!-- 공지사항 작성 -->
+	<insert id="insertNotice" parameterType="project.dto.NoticeDto">
+		insert into
+			notice(notice_title,notice_content,notice_img,notice_created_time, user_id)
+		values
+			(#{noticeTitle}, #{noticeContent}, #{noticeImg}, now(), 'admin')
+	</insert>
+
+	<!-- 공지사항 삭제 -->
+	<delete id="deleteNotice" parameterType="int">
+		update notice
+		   set notice_deleted = 'Y',
+		       user_id = 'Test'
+		 where notice_idx = #{noticeIdx}
+	</delete>
+
+	<!-- 공지사항 수정 -->
+	<update id="updateNotice" parameterType="project.dto.NoticeDto">
+		update notice
+		   set notice_title = #{noticeTitle},
+		       notice_content = #{noticeContent},
+		       notice_updated_time = now(),
+		       user_id = 'Test'
+		 where notice_idx = #{noticeIdx}
+	</update>
+
+	<!-- QNA 리스트 조회 <select id="listQnaDto" resultType="project.dto.QnaDto"> 
+		select qna_idx, qna_title, date_format(qna_created_time, '%Y.%m.%d' ) as 
+		qna_created_time from qna where qna_deleted = 'N'; </select> -->
+
+	<!-- QNA 상세페이지 조회 <select id="qnaDetail" parameterType="int" resultType="project.dto.QnaDto"> 
+		select qna_idx, qna_title, qna_content, date_format(qna_created_time, '%Y.%m.%d' 
+		) as qna_created_time from qna where qna_deleted = 'N' and qna_idx=#{qnaIdx} 
+		</select> -->
+
+	<!-- QNA 작성 -->
+	<insert id="insertQna" parameterType="project.dto.QnaDto">
+		insert into
+			qna(qna_title,qna_content,qna_img,qna_created_time, user_id)
+		values
+			(#{qnaTitle}, #{qnaContent}, #{qnaImg}, now(), 'admin')
+	</insert>
+
+	<!-- QNA 삭제 -->
+	<delete id="deleteQna" parameterType="int">
+		update qna
+		   set qna_deleted = 'Y',
+		       user_id = 'Admin'
+		 where qna_idx = #{qnaIdx}
+	</delete>
+
+	<!-- QNA 수정 -->
+	<update id="updateQna" parameterType="project.dto.QnaDto">
+		update qna
+		   set qna_title = #{qnaTitle},
+		       qna_content = #{qnaContent},
+		       qna_created_time = now(),
+		       user_id = 'Admin'
+		 where qna_idx = #{qnaIdx}
+	</update>
+
+	<!-- QNA 페이지별 조회 -->
+	<!--<select id="listQnaDtoByPages" parameterType="int" resultType="project.dto.QnaDto"> 
+		select qna_idx, qna_title, user_id, date_format(qna_created_time, '%Y.%m.%d' 
+		) as qna_created_time from qna where qna_deleted = "N" order by qna_idx desc 
+		limit 10 offset #{pages} </select> -->
+
+	<!-- QNA 상세페이지 COMMENT 리스트 -->
+	<select id="selectCommentList" resultType="project.dto.QnaCommentDto" parameterType="int">
+		select qna_comment_idx, user_id, qna_comment_content, qna_idx,
+		       date_format(qna_comment_time, '%Y.%m.%d %H:%i:%s' )
+		    as qna_comment_time
+		  from qna_comment
+		 where qna_idx=#{qnaIdx}
+	</select>
+
+	<!-- QNA 상세페이지 조회 -->
+	<select id="selectQnaInfo" parameterType="int" resultType="project.dto.QnaDto">
+		select qna_idx, qna_title, qna_content,
+		       date_format(qna_created_time, '%Y.%m.%d' ) as qna_created_time
+		  from qna
+		 where qna_deleted = 'N' and qna_idx=#{qnaIdx}
+	</select>
+
+	<!-- QNA 상세페이지 COMMENT 등록 -->
+	<insert id="insertComment" parameterType="project.dto.QnaCommentDto">
+		insert into 
+			qna_comment (qna_comment_content, qna_comment_time, qna_idx, user_id)
+		values
+			(#{qnaCommentContent}, now(), #{qnaIdx}, 'lsy00812@gmail.com')
+
+		<!-- <selectKey keyProperty="userId" resultType="String"> select last_insert_id(); 
+			</selectKey> -->
+
+		<!-- <selectKey keyProperty="userId" resultType="String"> select last_insert_id(); 
+			'lsy00812@gmail.com' </selectKey> -->
+	</insert>
+
+	<!-- <if test="search != null"> where qna_title like concat('%',#{search},'%' 
+		) or qna_content like concat('%',#{search},'%' ) </if> -->
+
+	<!-- QNA 검색 -->
+	<select id="listQnaDtoByPages" resultType="project.dto.QnaDto">
+		select * 
+		  from ( select qna_idx, qna_title, user_id, qna_content,
+		                date_format(qna_created_time, '%Y.%m.%d' ) as qna_created_time
+		           from qna
+		          where qna_title like concat('%',#{search},'%' )
+		             or qna_content like concat('%',#{search},'%' )
+		       order by qna_idx desc )
+		    as qna_page
+		limit 10
+		offset #{pages}
+	</select>
+
+	<!-- QNA 검색 페이지 수 조회 -->
+	<select id="listQnaDtoSearchPageCount" resultType="int">
+		select ceil( count(*)/ 10 ) 
+		  from ( select qna_idx, qna_title, user_id, qna_content,
+		                date_format(qna_created_time, '%Y.%m.%d' ) as qna_created_time
+		           from qna
+		          where qna_title like concat('%',#{search},'%' )
+		             or qna_content like concat('%',#{search},'%' )
+		       order by qna_idx desc)
+		    as qna_search_count
+	</select>
+	
+	<!-- QNA 페이지 수 조회 -->
+	<select id="listQnaDtoPageCount" resultType="int">
+		select ceil( count(*) / 10 )
+		  from qna
+	</select>
+	
+	<!-- Accompany 검색 -->
+	<select id="listAccompanyDtoByPages" resultType="project.dto.AccompanyDto">
+		select * 
+		  from ( select accompany_idx, accompany_title, user_id, accompany_numbers, accompany_content, accompany_image, accompany_region,
+		                date_format(accompany_start_time, "%y.%m.%d") as accompany_start_time
+		                , date_format(accompany_end_time, "%y.%m.%d") as accompany_end_time
+		           from accompany
+		          where accompany_title like concat('%',#{search},'%' )
+		             or accompany_content like concat('%',#{search},'%' )
+		             or accompany_region like concat('%',#{search},'%' )
+		       order by accompany_idx desc )
+		    as accompany_page
+		    where accompany_region like concat('%',#{accompanyRegion})
+		 limit 9
+		offset #{pages}
+	</select>
+
+	<!-- Accompany 검색 페이지 수 조회 -->
+	<select id="listAccompanyDtoSearchPageCount" resultType="int">
+		select ceil( count(*) / 9 )
+		  from ( select accompany_idx, accompany_title, user_id, accompany_numbers, accompany_content, accompany_image, accompany_region,
+		                accompany_start_time, accompany_end_time
+		           from accompany
+		          where accompany_title like concat('%',#{search},'%' )
+		             or accompany_content like concat('%',#{search},'%' )
+		             or accompany_region like concat('%',#{search},'%' )
+	           order by accompany_idx desc )
+	        as accompany_search_count
+	        where accompany_region like concat('%',#{accompanyRegion})
+	</select>
+	
+	<!-- Accompany 페이지 수 조회 -->
+	<select id="listAccompanyDtoPageCount" resultType="int">
+		select ceil( count(*) / 9 )
+		  from accompany
+	</select>
+	
+	<!-- Accompany 상세페이지 조회 -->
+	<select id="accompanyDetail" parameterType="int" resultType="project.dto.AccompanyDto"> 
+		select accompany_idx, accompany_title, accompany_image, accompany_content, accompany_numbers, accompany_cnt, accompany_region,
+			   date_format(accompany_start_time, '%Y.%m.%d' ) as accompany_start_time ,
+			   date_format(accompany_end_time, '%Y.%m.%d' ) as accompany_end_time ,
+		       date_format(accompany_created_time, '%Y.%m.%d %H:%i' ) as accompany_created_time 
+		  from accompany
+		 where accompany_deleted = 'N' and accompany_idx=#{accompanyIdx} 
+	</select>
+	
+	<!-- Accompany 상세페이지 조회수 증가 -->
+	<update id="updateCount" parameterType="int">
+		update accompany
+		   set accompany_cnt = accompany_cnt + 1
+		where accompany_idx = #{accompanyIdx}
+	</update>
+	
+	<!-- Accompany 작성 -->	
+	<insert id="insertAccompany" parameterType="project.dto.AccompanyDto">
+		insert into
+			accompany(accompany_region, accompany_title, accompany_content, accompany_image, accompany_numbers,
+			accompany_start_time, accompany_end_time, accompany_created_time, user_id)
+		values
+			(#{accompanyRegion}, #{accompanyTitle}, #{accompanyContent}, #{accompanyImage}, #{accompanyNumbers},
+			#{accompanyStartTime}, #{accompanyEndTime}, now(), 'qwer')
+	</insert>
+
+	<!-- Accompany 삭제 -->
+	<delete id="deleteAccompany" parameterType="int">
+		update accompany
+		   set accompany_deleted = 'Y',
+		       user_id = 'qwer'
+		 where ccompany_idx = #{accompanyIdx}
+	</delete>
+
+	<!-- Accompany 수정 -->
+	<update id="updateAccompany" parameterType="project.dto.AccompanyDto">
+		update accompany
+		   set accompany_title = #{accompanyTitle},
+		       accompany_region = #{accompanyRegion},
+		       accompany_content = #{accompanyContent},
+		       accompany_image = #{accompanyImage},
+		       accompany_numbers = #{accompanyNumbers},
+		       accompany_start_time = #{accompanyStartTime},
+		       accompany_end_time = #{accompanyEndTime},
+		       accompany_created_time = now(),
+		       user_id = 'qwer'
+		 where accompany_idx = #{accompanyIdx}
+	</update>
+
+
+
+
+</mapper>

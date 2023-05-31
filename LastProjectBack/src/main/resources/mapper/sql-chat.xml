@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="project.mapper.ChatMapper">
+
+
+	<!-- 동행글Idx로 채팅방ID 조회 -->
+	<select id="selectChatroomByAccompanyId" parameterType="int"
+		resultType="String">
+		select chatroom_id
+		from chatroom
+		where accompany_idx =
+		#{accompanyIdx}
+	</select>
+
+	<!-- 동행 채팅방 생성 -->
+	<insert id="insertChatroom"
+		parameterType="project.dto.ChatroomDto">
+		insert into chatroom ( chatroom_id, accompany_idx )
+		values ( #{chatroomId}, #{accompanyIdx})
+	</insert>
+
+	<!-- userId 기준으로 채팅방 조회 -->
+	<select id="selectChatroomByUserId" parameterType="String"
+		resultType="project.dto.ChatroomUserDto">
+		select acc.accompany_title, cru.chatroom_id,
+		acc.accompany_idx from chatroom_user cru
+		inner join chatroom cr
+		on
+		cru.chatroom_id = cr.chatroom_id
+		inner join accompany acc
+		on
+		acc.accompany_idx = cr.accompany_idx
+		where cru.user_id = #{userId};
+	</select>
+
+	<!-- 채팅방ID 기준으로 userId 조회 -->
+	<select id="selectUserIdByChatroomId" parameterType="String"
+		resultType="project.dto.ChatroomUserDto">
+		select *
+		from chatroom_user
+		where chatroom_id = #{chatroomId}
+	</select>
+
+	<!-- 채팅방ID, UserID기준으로 목록 조회 -->
+	<select id="selectListByChatroomIdAndUserId"
+		parameterType="project.dto.ChatroomUserDto"
+		resultType="project.dto.ChatroomUserDto">
+		select *
+		from chatroom_user
+		where chatroom_id = #{chatroomId}
+		and user_id = #{userId}
+	</select>
+
+
+	<!-- 채팅방_유저테이블에 userId 입력 -->
+	<insert id="insertUserIdToChatroomUser"
+		parameterType="project.dto.ChatroomUserDto">
+		insert into chatroom_user ( user_id, chatroom_id )
+		values ( #{userId}, #{chatroomId} )
+
+	</insert>
+
+	<!-- 채팅방 퇴장 -->
+	<delete id="deleteChatroom"
+		parameterType="project.dto.ChatroomUserDto">
+		delete from chatroom_user
+		where chatroom_id = #{
+		chatroomId } and user_id = #{ userId }
+	</delete>
+
+	<!-- 안읽은 메시지 조회 -->
+	<!-- 채팅방 퇴장시간 조회 -->
+	<select id="selectLastMsgTime"
+		parameterType="project.dto.ChatDto" resultType="String">
+		select created_dt from chat
+		where user_id = #{userId}
+		and chatroom_id = #{chatroomId}
+		and type='LEAVE'
+		order by created_dt desc limit 1;
+
+	</select>
+
+	<!-- 안읽은 메시지 개수 -->
+	<select id="selectUnreadMsgCnt"
+		parameterType="project.dto.ChatDto" resultType="int">
+		select count(*) from chat
+		where type='CHAT' 
+		and created_dt > #{createdDt}
+		and chatroom_id =#{chatroomId};
+	</select>
+
+
+	<!-- [[ 글로벌 채팅 ]] -->
+	<!-- 글로벌 채팅 내용 조회 -->
+	<select id="selectMessage" parameterType="int"
+		resultType="project.dto.ChatDto">
+		select * from ( select * from chat where chatroom_id is
+		null order by created_dt desc limit ${num})a
+		inner join user u
+		on a.user_id = u.user_id
+		order by a.created_dt
+	</select>
+
+	<!-- 글로벌 채팅 내용 입력 -->
+	<insert id="insertMessage" parameterType="project.dto.ChatDto">
+		insert into chat (type,
+		message, user_id, created_dt)
+		values (#{type}, #{message}, #{userId},
+		#{createdDt})
+	</insert>
+
+
+	<!-- [[ 동행 채팅 ]] -->
+	<!-- 동행 채팅 내용 조회 -->
+	<select id="selectMessageChatroom" parameterType="String"
+		resultType="project.dto.ChatDto">
+		select * from ( select * from chat order by created_dt desc
+		)a 
+		inner join user u
+		on a.user_id = u.user_id
+		where chatroom_id = #{ chatroomId } order by a.created_dt
+	</select>
+
+	<!-- 동행 채팅 내용 입력 -->
+	<insert id="insertMessageChatroom"
+		parameterType="project.dto.ChatDto">
+		insert into chat (type, message, user_id, created_dt,
+		chatroom_id)
+		values (#{type}, #{message}, #{userId}, #{createdDt},
+		#{chatroomId})
+	</insert>
+
+</mapper>

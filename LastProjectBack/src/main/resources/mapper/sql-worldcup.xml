@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="project.mapper.WorldcupMapper">
+
+	<select id="rawinfoList" resultType="project.dto.IdealworldcupStaticDto">
+		select rowinfo_idx, rawinfo_name, rawinfo_img, rawinfo_description,
+		tried_category_idx
+		from idealworldcupStatic
+	</select>
+		
+	<select id="selectWorldcupList" resultType="project.dto.IdealworldcupDto">
+	select * from rawinfo
+	</select>
+	
+	<select id="selectRawinfoList" resultType="project.dto.RawinfoDto">
+	select * from rawinfo
+	
+	</select>
+	
+	<select id="selectRawinfoListByCategory" parameterType="int" resultType="project.dto.RawinfoDto">
+	select * from rawinfo 
+	where tried_category_idx = #{triedCategoryIdx}
+	</select>
+	
+	<update id="updateRawinfoWincnt" parameterType="int">
+	update rawinfo set idealworldcup_wincnt = idealworldcup_wincnt + 1
+	where	rawinfo_idx = #{rawinfoIdx}
+	</update>
+	
+	<select id="selectRawinfowinDetail" resultType="project.dto.RawinfoDto">
+	select * from rawinfo 
+	where rawinfo_idx = #{rawinfoIdx}
+	</select>
+	
+	<select id="selectTotalwincnt" parameterType="int" resultType="int">
+	select sum(idealworldcup_wincnt) from rawinfo group by tried_category_idx having tried_category_idx = #{triedCategoryIdx};
+	</select>
+	
+	
+	
+</mapper>

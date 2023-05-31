@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="project.mapper.TravelcourseMapper">
+
+	
+	<!-- 1-1. 여행코스 입력 -->
+	<insert id="insertCourse" parameterType="project.dto.TravelcourseDto">
+		<![CDATA[
+		insert into travelcourse (travelcourse_title, travelcourse_createdtime, user_id, 
+		travelcourse_start_date, travelcourse_end_date)
+		values (
+		#{travelcourseTitle}, now(), #{userId}, #{travelcourseStartDate}, #{travelcourseEndDate} )
+		]]>
+		<selectKey keyProperty="travelcourseIdx" resultType="Integer">
+	        SELECT LAST_INSERT_ID()
+	    </selectKey>
+	</insert>
+
+	<!-- 1-1-1. 여행코스 DAY별 입력 -->
+	<insert id="insertCourseDay" parameterType="project.dto.TravelcourseDetailListDto">
+		insert into travelcourse_list
+		(day, day_description, travelcourse_idx) values
+		(#{day}, #{dayDescription}, #{travelcourseIdx})
+		<selectKey keyProperty="travelcourseListIdx" resultType="Integer">
+	        SELECT LAST_INSERT_ID()
+	    </selectKey>
+	</insert>
+	
+	<!-- 1-1-2. 여행코스 DAY별 Dayinfo별 입력 -->
+	<insert id="insertCourseDayinfo" parameterType="java.util.List">
+		insert into travelcourse_detail
+		(orders, lat, lng, place_name, travelcourse_list_idx) values
+		<foreach item="dayinfo" index="index" collection="list" separator=",">
+			(#{dayinfo.orders}, #{dayinfo.lat}, #{dayinfo.lng}, #{dayinfo.placeName}, #{dayinfo.travelcourseListIdx})
+		</foreach>
+	</insert>
+	
+	<!-- 1-2. 여행코스 list 조회 -->
+	<select id="selectCourseList" resultType="project.dto.TravelcourseListDto">
+		select * from user user
+		inner join travelcourse tc
+		on user.user_id = tc.user_id
+		inner join travelcourse_list tcl
+		on tc.travelcourse_idx = tcl.travelcourse_idx
+		inner join travelcourse_detail tcd
+		on tcl.travelcourse_list_idx = tcd.travelcourse_list_idx
+		where travelcourse_deleted = 'N'
+		order by tc.travelcourse_idx desc, tcd.travelcourse_list_idx asc,
+        tcd.orders asc
+	</select>
+
+	<!-- 1-2-1. 여행코스 개별 detail 조회 -->
+	<select id="selectCourseDetail" parameterType="int" resultType="project.dto.TravelcourseListDto">
+		select * from travelcourse tc
+		inner join travelcourse_list tcl
+		on tc.travelcourse_idx = tcl.travelcourse_idx
+		inner join travelcourse_detail tcd
+		on tcl.travelcourse_list_idx = tcd.travelcourse_list_idx
+		where travelcourse_deleted = 'N' and tc.travelcourse_idx = #{travelcourseIdx};
+	</select>
+	
+
+	<update id="updateHitCount" parameterType="int">
+		update travelcourse
+		set travelcourse_cnt = travelcourse_cnt + 1
+		where travelcourse_idx = #{travelcourseIdx}
+	</update>
+
+	<update id="updateCourse" parameterType="project.dto.TravelcourseDto">
+		update travelcourse
+		set travelcourse_title = #{travelcourseTitle},
+		travelcourse_contents = #{travelcourseContents},
+		travelcourse_createdtime = now(),
+		user_id = 'admin'
+		where travelcourse_idx = #{travelcourseIdx}
+	</update>
+	
+	<delete id="deleteCourse" parameterType="int">
+		update travelcourse
+		set travelcourse_deleted = "Y",
+		user_id = 'admin'
+		where travelcourse_idx = #{travelcourseIdx}
+	</delete>
+</mapper>
